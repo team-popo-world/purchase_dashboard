@@ -9,8 +9,17 @@ load_dotenv()
 
 # 데이터베이스 설정
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/kidhabits")
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# 데이터베이스 엔진 생성 (연결 테스트 없이)
+try:
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+except Exception as e:
+    print(f"Database connection warning: {e}")
+    # 임시로 SQLite 사용 (개발용)
+    engine = create_engine("sqlite:///./temp.db")
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 Base = declarative_base()
 
 # 데이터베이스 모델
