@@ -1,20 +1,32 @@
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
 import pandas as pd
+import numpy as np
 
 # 데이터 분석 클래스
 class PurchaseAnalyzer:
     def __init__(self, df: pd.DataFrame):
-        self.df = df
+        self.df = df.copy()
         self.now = datetime.now()
         self.one_week_ago = self.now - timedelta(days=7)
         self.two_weeks_ago = self.now - timedelta(days=14)
         
         # 총액 계산 컬럼 추가
-        self.df['total_amount'] = self.df['price'] * self.df['cnt']
+        if not self.df.empty:
+            self.df['total_amount'] = self.df['price'] * self.df['cnt']
         
     def get_weekly_metrics(self) -> Dict[str, Any]:
         """주간 메트릭 계산"""
+        if self.df.empty:
+            return {
+                'thisWeekTotal': 0,
+                'weeklyChange': 0.0,
+                'mostPopularCategory': "데이터 없음",
+                'educationRatio': 0.0,
+                'totalPurchases': 0,
+                'avgPurchaseAmount': 0
+            }
+            
         # 이번 주 데이터
         this_week = self.df[self.df['timestamp'] >= self.one_week_ago]
         last_week = self.df[
@@ -23,21 +35,26 @@ class PurchaseAnalyzer:
         ]
         
         # 총 소비액
-        this_week_total = this_week['total_amount'].sum()
-        last_week_total = last_week['total_amount'].sum()
+        this_week_total = this_week['total_amount'].sum() if not this_week.empty else 0
+        last_week_total = last_week['total_amount'].sum() if not last_week.empty else 0
         
         # 변화율 계산
-        weekly_change = 0
+        weekly_change = 0.0
         if last_week_total > 0:
             weekly_change = ((this_week_total - last_week_total) / last_week_total) * 100
             
         # 가장 인기 카테고리
-        category_amounts = this_week.groupby('type')['total_amount'].sum()
-        most_popular = category_amounts.idxmax() if not category_amounts.empty else "데이터 없음"
+        most_popular = "데이터 없음"
+        if not this_week.empty:
+            category_amounts = this_week.groupby('type')['total_amount'].sum()
+            if not category_amounts.empty:
+                most_popular = category_amounts.idxmax()
         
         # 교육 아이템 비중
-        education_amount = this_week[this_week['type'] == '교육']['total_amount'].sum()
-        education_ratio = (education_amount / this_week_total * 100) if this_week_total > 0 else 0
+        education_ratio = 0.0
+        if not this_week.empty and this_week_total > 0:
+            education_amount = this_week[this_week['type'] == '교육']['total_amount'].sum()
+            education_ratio = (education_amount / this_week_total * 100)
         
         # 평균 구매액
         total_purchases = len(this_week)
@@ -45,11 +62,11 @@ class PurchaseAnalyzer:
         
         return {
             'thisWeekTotal': int(this_week_total),
-            'weeklyChange': round(weekly_change, 1),
-            'mostPopularCategory': most_popular,
-            'educationRatio': round(education_ratio, 1),
-            'totalPurchases': total_purchases,
-            'avgPurchaseAmount': avg_amount
+            'weeklyChange': round(float(weekly_change), 1),
+            'mostPopularCategory': str(most_popular),
+            'educationRatio': round(float(education_ratio), 1),
+            'totalPurchases': int(total_purchases),
+            'avgPurchaseAmount': int(avg_amount)
         }
     
     def get_weekly_trend(self) -> List[Dict[str, Any]]:
@@ -67,11 +84,15 @@ class PurchaseAnalyzer:
             ]
             
             # 카테고리별 합계
-            category_sums = day_data.groupby('type')['total_amount'].sum()
-            
             day_result = {'day': day_name}
-            for category in ['간식', '오락', '장난감', '교육', '기타']:
-                day_result[category] = int(category_sums.get(category, 0))
+            
+            if not day_data.empty:
+                category_sums = day_data.groupby('type')['total_amount'].sum()
+                for category in ['간식', '오락', '장난감', '교육', '기타']:
+                    day_result[category] = int(category_sums.get(category, 0))
+            else:
+                for category in ['간식', '오락', '장난감', '교육', '기타']:
+                    day_result[category] = 0
                 
             trend_data.append(day_result)
             
@@ -80,6 +101,10 @@ class PurchaseAnalyzer:
     def get_category_distribution(self) -> List[Dict[str, Any]]:
         """카테고리별 분포 분석"""
         this_week = self.df[self.df['timestamp'] >= self.one_week_ago]
+        
+        if this_week.empty:
+            return []
+            
         category_amounts = this_week.groupby('type')['total_amount'].sum()
         
         colors = {
@@ -102,20 +127,30 @@ class PurchaseAnalyzer:
     def get_hourly_pattern(self) -> List[Dict[str, Any]]:
         """시간대별 구매 패턴"""
         this_week = self.df[self.df['timestamp'] >= self.one_week_ago]
-        hourly_counts = this_week.groupby(this_week['timestamp'].dt.hour)['cnt'].sum()
         
         hourly_data = []
-        for hour in range(24):
-            hourly_data.append({
-                'hour': f'{hour}시',
-                'purchases': int(hourly_counts.get(hour, 0))
-            })
+        if not this_week.empty:
+            hourly_counts = this_week.groupby(this_week['timestamp'].dt.hour).size()
+            for hour in range(24):
+                hourly_data.append({
+                    'hour': f'{hour}시',
+                    'purchases': int(hourly_counts.get(hour, 0))
+                })
+        else:
+            for hour in range(24):
+                hourly_data.append({
+                    'hour': f'{hour}시',
+                    'purchases': 0
+                })
             
         return hourly_data
     
     def get_popular_products(self, limit: int = 8) -> List[Dict[str, Any]]:
         """인기 상품 분석"""
         this_week = self.df[self.df['timestamp'] >= self.one_week_ago]
+        
+        if this_week.empty:
+            return []
         
         # 상품별 집계
         product_stats = this_week.groupby(['name', 'type']).agg({
@@ -132,45 +167,97 @@ class PurchaseAnalyzer:
                 'category': row['type'],
                 'count': int(row['cnt']),
                 'totalAmount': int(row['total_amount']),
-                'avgPrice': round(row['price'], 0)
+                'avgPrice': round(float(row['price']), 0)
             }
             for _, row in product_stats.iterrows()
         ]
     
     def generate_alerts(self, metrics: Dict[str, Any]) -> List[Dict[str, str]]:
-        """알림 생성"""
+        """개선된 알림 생성"""
         alerts = []
         this_week = self.df[self.df['timestamp'] >= self.one_week_ago]
         
-        if len(this_week) == 0:
+        # 데이터 없음 처리
+        if this_week.empty:
+            alerts.append({
+                'type': 'info',
+                'title': '첫 구매를 시작해보세요',
+                'message': '아직 구매 데이터가 없어요. 첫 번째 아이템을 구매해보세요!'
+            })
             return alerts
             
         # 카테고리별 비중 계산
-        category_ratios = this_week.groupby('type')['total_amount'].sum() / this_week['total_amount'].sum()
+        total_amount = this_week['total_amount'].sum()
+        if total_amount > 0:
+            category_ratios = this_week.groupby('type')['total_amount'].sum() / total_amount
+            
+            # 간식 과다 소비 체크
+            snack_ratio = category_ratios.get('간식', 0)
+            if snack_ratio > 0.5:
+                alerts.append({
+                    'type': 'warning',
+                    'title': '간식 소비 주의',
+                    'message': f'이번 주 간식 구매가 전체의 {snack_ratio*100:.0f}%를 넘었어요. 균형 잡힌 소비를 권장해요!'
+                })
+            elif snack_ratio > 0.4:
+                alerts.append({
+                    'type': 'warning',
+                    'title': '간식 소비 주의',
+                    'message': f'이번 주 간식 구매가 전체의 {snack_ratio*100:.0f}%를 넘었어요. 균형 잡힌 소비를 권장해요!'
+                })
+            
+            # 교육 아이템 관련 알림
+            education_ratio = metrics.get('educationRatio', 0)
+            if education_ratio >= 30:
+                alerts.append({
+                    'type': 'success',
+                    'title': '교육 아이템 우수',
+                    'message': '교육 관련 구매 비중이 목표치를 달성했어요! 🎉'
+                })
+            elif education_ratio >= 20:
+                alerts.append({
+                    'type': 'success',
+                    'title': '교육 목표 달성',
+                    'message': '교육 아이템 구매 목표를 달성했어요! 🎓'
+                })
+            elif education_ratio < 10:
+                alerts.append({
+                    'type': 'info',
+                    'title': '교육 아이템 추천',
+                    'message': '교육 관련 구매가 적어요. 학습 도서나 교육 도구를 고려해보세요!'
+                })
+            
+            # 균형잡힌 소비 체크
+            balanced_categories = sum(1 for ratio in category_ratios.values if 0.1 <= ratio <= 0.4)
+            if balanced_categories >= 4:
+                alerts.append({
+                    'type': 'success',
+                    'title': '균형잡힌 소비',
+                    'message': '모든 카테고리에서 균형잡힌 소비를 보이고 있어요! 👏'
+                })
         
-        # 간식 과다 소비 체크
-        snack_ratio = category_ratios.get('간식', 0)
-        if snack_ratio > 0.4:
-            alerts.append({
-                'type': 'warning',
-                'title': '간식 소비 주의',
-                'message': f'이번 주 간식 구매가 전체의 {snack_ratio*100:.0f}%를 넘었어요. 균형 잡힌 소비를 권장해요!'
-            })
-        
-        # 교육 아이템 부족 체크
-        if metrics['educationRatio'] < 15:
-            alerts.append({
-                'type': 'info',
-                'title': '교육 아이템 추천',
-                'message': '교육 관련 구매가 적어요. 학습 도서나 교육 도구를 고려해보세요!'
-            })
-        
-        # 긍정적 변화 감지
-        if metrics['weeklyChange'] < -10:
+        # 주간 변화 관련 알림
+        weekly_change = metrics.get('weeklyChange', 0)
+        if weekly_change < -15:
             alerts.append({
                 'type': 'success',
                 'title': '절약 성공',
-                'message': '지난 주보다 소비가 줄었어요. 훌륭한 절약 습관이에요! 🎉'
+                'message': f'지난 주보다 소비가 {abs(weekly_change):.1f}% 줄었어요. 훌륭한 절약 습관이에요! 🎉'
+            })
+        elif weekly_change > 30:
+            alerts.append({
+                'type': 'warning',
+                'title': '소비 증가 주의',
+                'message': f'지난 주보다 소비가 {weekly_change:.1f}% 늘었어요. 소비 패턴을 점검해보세요.'
+            })
+        
+        # 구매 빈도 체크
+        total_purchases = metrics.get('totalPurchases', 0)
+        if total_purchases > 50:
+            alerts.append({
+                'type': 'info',
+                'title': '구매 빈도 점검',
+                'message': f'이번 주 총 {total_purchases}번 구매했어요. 충동 구매는 줄이고 계획적으로 구매해보세요.'
             })
             
         return alerts

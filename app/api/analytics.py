@@ -7,7 +7,9 @@ import pandas as pd
 from ..database import get_db
 from ..models import (
     DashboardResponse, DashboardMetrics, WeeklyTrendItem,
-    CategoryData, HourlyData, PopularProduct, AlertItem
+    CategoryData, HourlyData, PopularProduct, AlertItem,
+    ChildrenResponse, ChildInfo, CategoryStatsResponse, CategoryStat,
+    TimelineResponse, TimelineItem, HealthResponse
 )
 from ..analytics import PurchaseAnalyzer
 
@@ -47,15 +49,20 @@ async def get_dashboard_data(
         
         # DataFrame으로 변환
         columns = ['id', 'type', 'name', 'price', 'cnt', 'timestamp', 'child_id']
-        df = pd.DataFrame(result.fetchall(), columns=columns)
+        rows = result.fetchall()
         
-        if df.empty:
+        if not rows:
             raise HTTPException(status_code=404, detail="해당 아이의 구매 데이터가 없습니다.")
+            
+        df = pd.DataFrame(rows, columns=columns)
         
-        # 데이터 타입 변환
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df['price'] = df['price'].astype(int)
-        df['cnt'] = df['cnt'].astype(int)
+        # 데이터 타입 변환 (안전하게)
+        try:
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df['price'] = pd.to_numeric(df['price'], errors='coerce').fillna(0).astype(int)
+            df['cnt'] = pd.to_numeric(df['cnt'], errors='coerce').fillna(0).astype(int)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"데이터 타입 변환 오류: {str(e)}")
         
         # 분석 수행
         analyzer = PurchaseAnalyzer(df)
@@ -80,18 +87,18 @@ async def get_dashboard_data(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"데이터 분석 중 오류가 발생했습니다: {str(e)}")
 
-@router.get("/children")
+@router.get("/children", response_model=ChildrenResponse)
 async def get_children_list(db: Session = Depends(get_db)):
     """등록된 아이들 목록 조회"""
     try:
         query = text("SELECT DISTINCT child_id FROM purchasehistory ORDER BY child_id")
         result = db.execute(query)
-        children = [{'child_id': row[0]} for row in result.fetchall()]
-        return {"children": children}
+        children = [ChildInfo(child_id=row[0]) for row in result.fetchall()]
+        return ChildrenResponse(children=children)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"아이 목록 조회 중 오류: {str(e)}")
 
-@router.get("/categories/stats/{child_id}")
+@router.get("/categories/stats/{child_id}", response_model=CategoryStatsResponse)
 async def get_category_stats(
     child_id: str,
     days: int = Query(30, ge=1, le=365),
@@ -121,20 +128,20 @@ async def get_category_stats(
         
         stats = []
         for row in result.fetchall():
-            stats.append({
-                'category': row[0],
-                'purchaseCount': row[1],
-                'totalAmount': int(row[2]),
-                'avgAmount': round(float(row[3]), 2),
-                'totalQuantity': row[4]
-            })
+            stats.append(CategoryStat(
+                category=row[0],
+                purchaseCount=row[1],
+                totalAmount=int(row[2]),
+                avgAmount=round(float(row[3]), 2),
+                totalQuantity=row[4]
+            ))
             
-        return {"categoryStats": stats}
+        return CategoryStatsResponse(categoryStats=stats)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"카테고리 통계 조회 중 오류: {str(e)}")
 
-@router.get("/timeline/{child_id}")
+@router.get("/timeline/{child_id}", response_model=TimelineResponse)
 async def get_purchase_timeline(
     child_id: str,
     days: int = Query(7, ge=1, le=30),
@@ -160,30 +167,32 @@ async def get_purchase_timeline(
         
         timeline = []
         for row in result.fetchall():
-            timeline.append({
-                'timestamp': row[0].isoformat(),
-                'category': row[1],
-                'productName': row[2],
-                'price': row[3],
-                'quantity': row[4],
-                'totalAmount': int(row[5])
-            })
+            timeline.append(TimelineItem(
+                timestamp=row[0],
+                category=row[1],
+                productName=row[2],
+                price=row[3],
+                quantity=row[4],
+                totalAmount=int(row[5])
+            ))
             
-        return {"timeline": timeline}
+        return TimelineResponse(timeline=timeline)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"타임라인 조회 중 오류: {str(e)}")
 
-@router.get("/health")
+@router.get("/health", response_model=HealthResponse)
 async def health_check(db: Session = Depends(get_db)):
     """서버 및 데이터베이스 상태 확인"""
     try:
         # DB 연결 테스트
         db.execute(text("SELECT 1"))
-        return {
-            "status": "healthy",
-            "database": "connected",
-            "timestamp": datetime.now().isoformat()
-        }
+        return HealthResponse(
+            status="healthy",
+            database="connected",
+            timestamp=datetime.now()
+        )
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"서비스 이용 불가: {str(e)}")
+
+
