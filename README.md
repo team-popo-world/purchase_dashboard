@@ -1,27 +1,54 @@
-# 아이 습관 분석 API
+# 🎮 아이 습관 분석 대시보드
 
-구매 데이터 기반 아이 소비 패턴 분석 시스템
+부모가 아이의 소비 습관과 일상을 게임의 상점 형태로 관리하는 서비스의 분석 대시보드입니다.
 
-## 프로젝트 구조
+## 📊 주요 기능
 
+### 대시보드 구성
+- **실시간 지표**: 총 소비액, 인기 카테고리, 교육 비중, 평균 단가
+- **트렌드 분석**: 일별/주간 소비 패턴 시각화
+- **카테고리 분석**: 간식, 오락, 장난감, 교육, 기타별 지출 분포
+- **시간대 패턴**: 구매 시간대별 행동 분석
+- **인기 상품**: 가장 많이 구매하는 상품 랭킹
+- **스마트 알림**: AI 기반 소비 패턴 분석 및 추천
+
+### 기술 스택
+- **Backend**: FastAPI + SQLAlchemy + Pandas
+- **Frontend**: React + Recharts + TailwindCSS
+- **Database**: SQLite (개발용), PostgreSQL (운영용)
+- **시각화**: 인터랙티브 차트 및 대시보드
+
+## 🚀 빠른 시작
+
+### 1. 환경 설정
+```bash
+# 저장소 클론 (이미 있다면 생략)
+cd purchase_dashboard
+
+# 셋업 스크립트 실행 (Mac/Linux)
+chmod +x setup.sh
+./setup.sh
+
+# 또는 수동 설치
+pip install fastapi uvicorn sqlalchemy pandas python-multipart
+python create_sample_data.py
 ```
-purchase_dashboard/
-├── app/
-│   ├── __init__.py
-│   ├── main.py                 # FastAPI 앱 설정
-│   ├── database.py            # 데이터베이스 설정 및 모델
-│   ├── models.py              # Pydantic 모델
-│   ├── analytics.py           # 데이터 분석 로직
-│   └── api/
-│       ├── __init__.py
-│       └── analytics.py       # API 엔드포인트
-├── main.py                    # 서버 실행 파일
-├── requirements.txt           # 의존성 목록
-├── .env.example              # 환경변수 예시
-└── README.md                 # 이 파일
+
+### 2. 서버 실행
+```bash
+# FastAPI 서버 시작
+python run_server.py
+
+# 서버가 http://localhost:8000 에서 실행됩니다
 ```
 
-## 설치 및 실행
+### 3. 대시보드 확인
+```bash
+# 브라우저에서 index.html 열기
+open index.html
+
+# 또는 직접 브라우저에서 파일 열기
+```
 
 ### 1. 의존성 설치
 
