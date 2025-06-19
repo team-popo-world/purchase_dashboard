@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 # 응답 모델들
@@ -48,3 +48,36 @@ class DashboardResponse(BaseModel):
     popularProducts: List[PopularProduct]
     alerts: List[AlertItem]
     lastUpdated: datetime
+
+# 새로운 모델들 추가
+class ChildInfo(BaseModel):
+    child_id: str
+
+class ChildrenResponse(BaseModel):
+    children: List[ChildInfo]
+
+class CategoryStat(BaseModel):
+    category: str
+    purchaseCount: int
+    totalAmount: int
+    avgAmount: float
+    totalQuantity: int
+
+class CategoryStatsResponse(BaseModel):
+    categoryStats: List[CategoryStat]
+
+class TimelineItem(BaseModel):
+    timestamp: datetime
+    category: str
+    productName: str
+    price: int
+    quantity: int
+    totalAmount: int
+
+class TimelineResponse(BaseModel):
+    timeline: List[TimelineItem]
+
+class HealthResponse(BaseModel):
+    status: str
+    database: str
+    timestamp: datetime
