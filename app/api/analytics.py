@@ -8,8 +8,7 @@ from ..database import get_db
 from ..models import (
     DashboardResponse, DashboardMetrics, WeeklyTrendItem,
     CategoryData, HourlyData, PopularProduct, AlertItem,
-    ChildrenResponse, ChildInfo, CategoryStatsResponse, CategoryStat,
-    TimelineResponse, TimelineItem, HealthResponse
+    ChildrenResponse, ChildInfo, HealthResponse
 )
 from ..analytics import PurchaseAnalyzer
 
@@ -97,89 +96,6 @@ async def get_children_list(db: Session = Depends(get_db)):
         return ChildrenResponse(children=children)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"아이 목록 조회 중 오류: {str(e)}")
-
-@router.get("/categories/stats/{child_id}", response_model=CategoryStatsResponse)
-async def get_category_stats(
-    child_id: str,
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db)
-):
-    """카테고리별 상세 통계"""
-    try:
-        start_date = datetime.now() - timedelta(days=days)
-        
-        query = text("""
-            SELECT type, 
-                   COUNT(*) as purchase_count,
-                   SUM(price * cnt) as total_amount,
-                   AVG(price * cnt) as avg_amount,
-                   SUM(cnt) as total_quantity
-            FROM purchasehistory 
-            WHERE child_id = :child_id 
-            AND timestamp >= :start_date
-            GROUP BY type
-            ORDER BY total_amount DESC
-        """)
-        
-        result = db.execute(query, {
-            'child_id': child_id,
-            'start_date': start_date
-        })
-        
-        stats = []
-        for row in result.fetchall():
-            stats.append(CategoryStat(
-                category=row[0],
-                purchaseCount=row[1],
-                totalAmount=int(row[2]),
-                avgAmount=round(float(row[3]), 2),
-                totalQuantity=row[4]
-            ))
-            
-        return CategoryStatsResponse(categoryStats=stats)
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"카테고리 통계 조회 중 오류: {str(e)}")
-
-@router.get("/timeline/{child_id}", response_model=TimelineResponse)
-async def get_purchase_timeline(
-    child_id: str,
-    days: int = Query(7, ge=1, le=30),
-    db: Session = Depends(get_db)
-):
-    """구매 타임라인 조회"""
-    try:
-        start_date = datetime.now() - timedelta(days=days)
-        
-        query = text("""
-            SELECT timestamp, type, name, price, cnt, (price * cnt) as total_amount
-            FROM purchasehistory 
-            WHERE child_id = :child_id 
-            AND timestamp >= :start_date
-            ORDER BY timestamp DESC
-            LIMIT 50
-        """)
-        
-        result = db.execute(query, {
-            'child_id': child_id,
-            'start_date': start_date
-        })
-        
-        timeline = []
-        for row in result.fetchall():
-            timeline.append(TimelineItem(
-                timestamp=row[0],
-                category=row[1],
-                productName=row[2],
-                price=row[3],
-                quantity=row[4],
-                totalAmount=int(row[5])
-            ))
-            
-        return TimelineResponse(timeline=timeline)
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"타임라인 조회 중 오류: {str(e)}")
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check(db: Session = Depends(get_db)):

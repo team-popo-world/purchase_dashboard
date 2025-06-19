@@ -90,8 +90,6 @@ uvicorn app.main:app --reload --port 8000
 ### 대시보드 데이터
 - `GET /api/dashboard/{child_id}`: 대시보드 데이터 조회
 - `GET /api/children`: 등록된 아이들 목록
-- `GET /api/categories/stats/{child_id}`: 카테고리별 상세 통계
-- `GET /api/timeline/{child_id}`: 구매 타임라인
 
 ### 헬스체크
 - `GET /health`: 서버 및 데이터베이스 상태 확인

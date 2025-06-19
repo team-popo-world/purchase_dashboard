@@ -56,27 +56,6 @@ class ChildInfo(BaseModel):
 class ChildrenResponse(BaseModel):
     children: List[ChildInfo]
 
-class CategoryStat(BaseModel):
-    category: str
-    purchaseCount: int
-    totalAmount: int
-    avgAmount: float
-    totalQuantity: int
-
-class CategoryStatsResponse(BaseModel):
-    categoryStats: List[CategoryStat]
-
-class TimelineItem(BaseModel):
-    timestamp: datetime
-    category: str
-    productName: str
-    price: int
-    quantity: int
-    totalAmount: int
-
-class TimelineResponse(BaseModel):
-    timeline: List[TimelineItem]
-
 class HealthResponse(BaseModel):
     status: str
     database: str
