@@ -5,7 +5,7 @@ services:
   app:
     build: .
     ports:
-      - "8002:8002"
+      - "8001:8001"
     environment:
       - MONGODB_URL=mongodb://mongodb:27017
       - DATABASE_NAME=purchase_dashboard
