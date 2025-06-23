@@ -73,7 +73,7 @@ def get_db():
     """MongoDB 컬렉션 반환"""
     return collection
 
-def get_purchase_data(child_id: Optional[str] = None, days: int = 30) -> pd.DataFrame:
+def get_purchase_data(child_id: Optional[str] = None, days: int = 7) -> pd.DataFrame:
     """
     구매 데이터를 DataFrame으로 반환
     
@@ -137,7 +137,7 @@ def get_purchase_data(child_id: Optional[str] = None, days: int = 30) -> pd.Data
 
 
 # 비동기 함수들
-async def get_purchase_data_async(child_id: Optional[str] = None, days: int = 30) -> List[Dict[str, Any]]:
+async def get_purchase_data_async(child_id: Optional[str] = None, days: int = 7) -> List[Dict[str, Any]]:
     """
     비동기적으로 구매 데이터 조회
     """

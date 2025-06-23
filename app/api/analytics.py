@@ -15,12 +15,12 @@ router = APIRouter(prefix="/api", tags=["analytics"])
 @router.get("/dashboard/{child_id}", response_model=DashboardResponse)
 async def get_dashboard_data(
     child_id: str,
-    days: int = Query(30, description="분석할 일수", ge=1, le=365)
+    days: int = Query(7, description="분석할 일수", ge=1, le=365)
 ):
     """
     대시보드 데이터 조회
     - child_id: 아이 식별자
-    - days: 분석할 기간 (기본 30일)
+    - days: 분석할 기간 (기본 7일)
     """
     try:
         # MongoDB에서 데이터 조회

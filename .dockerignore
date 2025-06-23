@@ -1,0 +1,43 @@
+# Docker 관련 파일들
+.dockerignore
+Dockerfile.*
+
+# 환경 변수 파일
+.env
+.env.local
+.env.production
+
+# SSL 인증서
+ssl/
+*.pem
+*.key
+
+# 로그 파일
+*.log
+logs/
+
+# 백업 파일
+backup/
+*.bak
+
+# IDE 파일
+.vscode/
+.idea/
+
+# OS 파일
+.DS_Store
+Thumbs.db
+
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# 가상환경
+venv/
+env/
+ENV/
