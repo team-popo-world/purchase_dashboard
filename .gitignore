@@ -66,7 +66,8 @@ build/
 .vite/
 *.local
 
-# Frontend config and dependencies
+# Frontend dependencies and lock files
+node_modules/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
@@ -74,17 +75,8 @@ pnpm-lock.yaml
 # TypeScript
 *.tsbuildinfo
 
-# React / Frontend files
-src/
-index.html
-package.json
-tsconfig.json
-tsconfig.node.json
-vite.config.ts
-vite.config.js
-tailwind.config.js
-tailwind.config.ts
-postcss.config.js
+# React / Frontend build outputs
+# Note: Keep source files but ignore build outputs
 
 # Frontend environment
 .env.local
