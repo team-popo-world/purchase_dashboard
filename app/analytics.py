@@ -2,7 +2,6 @@ from typing import List, Dict, Any
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
-from .ml import PersonalityAnalyzer, AnomalyDetector
 
 # 데이터 분석 클래스
 class PurchaseAnalyzer:
@@ -12,24 +11,36 @@ class PurchaseAnalyzer:
         self.one_week_ago = self.now - timedelta(days=7)
         self.two_weeks_ago = self.now - timedelta(days=14)
         
-        # ML 모델 초기화
-        self.personality_analyzer = PersonalityAnalyzer()
-        self.anomaly_detector = AnomalyDetector()
-        
-        # 총액 계산 컬럼 추가
+        # 데이터 전처리
         if not self.df.empty:
+            # 총액 계산 컬럼 추가
             self.df['total_amount'] = self.df['price'] * self.df['cnt']
+            
+            # label을 한국어 카테고리로 변환
+            label_korean_mapping = {
+                'FOOD': '기타',      # 애완동물 먹이는 기타로 분류
+                'SNACK': '간식',
+                'ENTERTAINMENT': '오락',
+                'TOY': '장난감',
+                'EDUCATION': '교육',
+                'ETC': '기타'
+            }
+            
+            # label_korean 컬럼 생성
+            if 'label' in self.df.columns:
+                self.df['label_korean'] = self.df['label'].map(label_korean_mapping).fillna('기타')
+            else:
+                self.df['label_korean'] = '기타'
         
     def get_weekly_metrics(self) -> Dict[str, Any]:
         """주간 메트릭 계산"""
         if self.df.empty:
-            return {
-                'thisWeekTotal': 0,
-                'weeklyChange': 0.0,
-                'mostPopularCategory': "데이터 없음",
-                'educationRatio': 0.0,
-                'totalPurchases': 0,
-                'avgPurchaseAmount': 0
+            return {            'thisWeekTotal': 0,
+            'weeklyChange': 0.0,
+            'mostPopularCategory': "데이터 없음",
+            'educationRatio': 0.0,
+            'totalPurchases': 0,
+            'avgPurchaseAmount': 0.0
             }
             
         # 이번 주 데이터
@@ -51,24 +62,20 @@ class PurchaseAnalyzer:
         # 가장 인기 카테고리
         most_popular = "데이터 없음"
         if not this_week.empty:
-            category_amounts = this_week.groupby('type')['total_amount'].sum()
+            # label_korean을 사용하여 카테고리별 총액 계산
+            category_amounts = this_week.groupby('label_korean')['total_amount'].sum()
             if not category_amounts.empty:
                 most_popular = category_amounts.idxmax()
         
-        # 교육 아이템 비중 - label_korean을 사용
+        # 교육 아이템 비중
         education_ratio = 0.0
         if not this_week.empty and this_week_total > 0:
-            # label_korean 컬럼을 사용하여 교육 카테고리 필터링
-            if 'label_korean' in this_week.columns:
-                education_amount = this_week[this_week['label_korean'] == '교육 및 문구']['total_amount'].sum()
-            else:
-                # 호환성을 위해 type 컬럼도 체크
-                education_amount = this_week[this_week['type'] == '교육']['total_amount'].sum()
+            education_amount = this_week[this_week['label_korean'] == '교육']['total_amount'].sum()
             education_ratio = (education_amount / this_week_total * 100)
         
         # 평균 구매액
         total_purchases = len(this_week)
-        avg_amount = int(this_week_total / total_purchases) if total_purchases > 0 else 0
+        avg_amount = float(this_week_total / total_purchases) if total_purchases > 0 else 0.0
         
         return {
             'thisWeekTotal': int(this_week_total),
@@ -76,7 +83,7 @@ class PurchaseAnalyzer:
             'mostPopularCategory': str(most_popular),
             'educationRatio': round(float(education_ratio), 1),
             'totalPurchases': int(total_purchases),
-            'avgPurchaseAmount': int(avg_amount)
+            'avgPurchaseAmount': round(float(avg_amount), 2)
         }
     
     def get_weekly_trend(self) -> List[Dict[str, Any]]:
@@ -93,22 +100,17 @@ class PurchaseAnalyzer:
                 self.df['timestamp'].dt.date == target_date.date()
             ]
             
-            # 카테고리별 합계 - label_korean 사용
+            # 카테고리별 합계
             day_result = {'day': day_name}
             
             if not day_data.empty:
-                if 'label_korean' in day_data.columns:
-                    category_sums = day_data.groupby('label_korean')['total_amount'].sum()
-                    for category in ['먹이', '간식', '오락', '장난감', '교육 및 문구', '기타']:
-                        korean_name = category if category != '교육 및 문구' else '교육'
-                        day_result[korean_name] = int(category_sums.get(category, 0))
-                else:
-                    # 호환성을 위한 기존 방식
-                    category_sums = day_data.groupby('type')['total_amount'].sum()
-                    for category in ['먹이', '간식', '오락', '장난감', '교육', '기타']:
-                        day_result[category] = int(category_sums.get(category, 0))
+                category_sums = day_data.groupby('label_korean')['total_amount'].sum()
+                # 요청된 카테고리만 사용
+                categories = ['간식', '오락', '장난감', '교육', '기타']
+                for category in categories:
+                    day_result[category] = int(category_sums.get(category, 0))
             else:
-                for category in ['먹이', '간식', '오락', '장난감', '교육', '기타']:
+                for category in ['간식', '오락', '장난감', '교육', '기타']:
                     day_result[category] = 0
                 
             trend_data.append(day_result)
@@ -122,30 +124,25 @@ class PurchaseAnalyzer:
         if this_week.empty:
             return []
         
-        # label_korean 컬럼이 있으면 사용, 없으면 type 사용
-        if 'label_korean' in this_week.columns:
-            category_amounts = this_week.groupby('label_korean')['total_amount'].sum()
-        else:
-            category_amounts = this_week.groupby('type')['total_amount'].sum()
+        category_amounts = this_week.groupby('label_korean')['total_amount'].sum()
             
         colors = {
-            '먹이': '#ff9f43',
             '간식': '#ff6b6b',
             '오락': '#4ecdc4',
             '장난감': '#45b7d1',
-            '교육 및 문구': '#96ceb4',
-            '교육': '#96ceb4',  # 호환성
+            '교육': '#96ceb4',
             '기타': '#ffeaa7'
         }
         
-        return [
-            {
+        result = []
+        for category, amount in category_amounts.items():
+            result.append({
                 'name': category,
                 'value': int(amount),
                 'color': colors.get(category, '#gray')
-            }
-            for category, amount in category_amounts.items()
-        ]
+            })
+            
+        return result
     
     def get_hourly_pattern(self) -> List[Dict[str, Any]]:
         """시간대별 구매 패턴"""
@@ -175,31 +172,23 @@ class PurchaseAnalyzer:
         if this_week.empty:
             return []
         
-        # 상품별 집계 - label_korean 또는 type 사용
-        if 'label_korean' in this_week.columns:
-            product_stats = this_week.groupby(['name', 'label_korean']).agg({
-                'cnt': 'sum',
-                'total_amount': 'sum',
-                'price': 'mean'
-            }).reset_index()
-            product_stats.rename(columns={'label_korean': 'category'}, inplace=True)
-        else:
-            product_stats = this_week.groupby(['name', 'type']).agg({
-                'cnt': 'sum',
-                'total_amount': 'sum',
-                'price': 'mean'
-            }).reset_index()
-            product_stats.rename(columns={'type': 'category'}, inplace=True)
+        # 상품별 집계
+        product_stats = this_week.groupby(['name', 'label_korean']).agg({
+            'cnt': 'sum',
+            'total_amount': 'sum',
+            'price': 'mean'
+        }).reset_index()
+        product_stats.rename(columns={'label_korean': 'category'}, inplace=True)
         
         product_stats = product_stats.sort_values('cnt', ascending=False).head(limit)
         
         return [
             {
                 'name': row['name'],
-                'category': row['category'],
+                'category': '교육' if row['category'] == '교육 및 문구' else row['category'],
                 'count': int(row['cnt']),
                 'totalAmount': int(row['total_amount']),
-                'avgPrice': round(float(row['price']), 0)
+                'avgPrice': round(float(row['price']), 1)
             }
             for _, row in product_stats.iterrows()
         ]
@@ -218,17 +207,12 @@ class PurchaseAnalyzer:
             })
             return alerts
             
-        # 카테고리별 비중 계산 - label_korean 또는 type 사용
+        # 카테고리별 비중 계산
         total_amount = this_week['total_amount'].sum()
         if total_amount > 0:
-            if 'label_korean' in this_week.columns:
-                category_ratios = this_week.groupby('label_korean')['total_amount'].sum() / total_amount
-                # 간식 과다 소비 체크
-                snack_ratio = category_ratios.get('간식', 0)
-            else:
-                category_ratios = this_week.groupby('type')['total_amount'].sum() / total_amount
-                # 간식 과다 소비 체크
-                snack_ratio = category_ratios.get('간식', 0)
+            category_ratios = this_week.groupby('label_korean')['total_amount'].sum() / total_amount
+            # 간식 과다 소비 체크
+            snack_ratio = category_ratios.get('간식', 0)
             if snack_ratio > 0.5:
                 alerts.append({
                     'type': 'warning',
@@ -297,108 +281,3 @@ class PurchaseAnalyzer:
             })
             
         return alerts
-    
-    def get_personality_insights(self) -> Dict[str, Any]:
-        """아이 성향 분석 결과"""
-        return self.personality_analyzer.get_personality_insights(self.df)
-    
-    def get_anomaly_detection(self) -> Dict[str, Any]:
-        """이상 행동 탐지 결과"""
-        return self.anomaly_detector.detect_anomalies(self.df)
-    
-    def get_ml_enhanced_alerts(self) -> List[Dict[str, Any]]:
-        """ML 기반 강화된 알림"""
-        # 기존 알림
-        basic_alerts = self.generate_smart_alerts()
-        
-        # 이상 탐지 알림
-        anomaly_alerts = self.anomaly_detector.get_anomaly_alerts(self.df)
-        
-        # 성향 기반 맞춤 알림
-        personality_alerts = self._get_personality_based_alerts()
-        
-        # 모든 알림 통합 및 중복 제거
-        all_alerts = basic_alerts + anomaly_alerts + personality_alerts
-        
-        # 우선순위별 정렬 (alert > warning > success > info)
-        priority_order = {'alert': 4, 'warning': 3, 'success': 2, 'info': 1}
-        sorted_alerts = sorted(
-            all_alerts, 
-            key=lambda x: priority_order.get(x['type'], 0), 
-            reverse=True
-        )
-        
-        # 최대 8개까지만 반환
-        return sorted_alerts[:8]
-    
-    def _get_personality_based_alerts(self) -> List[Dict[str, Any]]:
-        """성향 기반 맞춤 알림"""
-        try:
-            personality_result = self.personality_analyzer.predict_personality(self.df)
-            personality_type = personality_result.get('personality_type', '')
-            
-            alerts = []
-            
-            # 성향별 맞춤 메시지
-            if '학습지향형' in personality_type:
-                education_ratio = self.get_weekly_metrics().get('educationRatio', 0)
-                if education_ratio < 20:
-                    alerts.append({
-                        'type': 'info',
-                        'title': '🎓 학습 성향 아이 맞춤 제안',
-                        'message': '교육적 가치가 높은 아이템을 더 추가해보세요!'
-                    })
-            
-            elif '활동적' in personality_type:
-                toy_ratio = sum(1 for item in self.df['type'] if item in ['오락', '장난감']) / len(self.df) * 100 if not self.df.empty else 0
-                if toy_ratio < 30:
-                    alerts.append({
-                        'type': 'info',
-                        'title': '⚡ 활동적 성향 아이 맞춤 제안',
-                        'message': '야외 활동이나 체험형 아이템을 고려해보세요!'
-                    })
-            
-            elif '창의적' in personality_type:
-                creative_items = len(self.df[self.df['name'].str.contains('만들기|그리기|미술|창작', na=False)])
-                if creative_items == 0:
-                    alerts.append({
-                        'type': 'info',
-                        'title': '🎨 창의적 성향 아이 맞춤 제안',
-                        'message': '창작 활동을 할 수 있는 아이템을 추가해보세요!'
-                    })
-            
-            return alerts
-            
-        except Exception:
-            return []
-    
-    def get_comprehensive_analysis(self) -> Dict[str, Any]:
-        """종합 분석 결과"""
-        basic_metrics = self.get_weekly_metrics()
-        weekly_trend = self.get_weekly_trend()
-        category_data = self.get_category_analysis()
-        hourly_data = self.get_hourly_analysis()
-        popular_products = self.get_popular_products()
-        
-        # ML 분석 결과
-        try:
-            personality_insights = self.get_personality_insights()
-            anomaly_detection = self.get_anomaly_detection()
-            ml_alerts = self.get_ml_enhanced_alerts()
-        except Exception:
-            # ML 기능 실패 시 기본값
-            personality_insights = {'personality': {'personality_type': '분석 중'}}
-            anomaly_detection = {'anomalies_detected': False, 'risk_level': 'low'}
-            ml_alerts = self.generate_smart_alerts()
-        
-        return {
-            'metrics': basic_metrics,
-            'weeklyTrend': weekly_trend,
-            'categoryData': category_data,
-            'hourlyData': hourly_data,
-            'popularProducts': popular_products,
-            'alerts': ml_alerts,
-            'personalityInsights': personality_insights,
-            'anomalyDetection': anomaly_detection,
-            'lastUpdated': self.now
-        }
