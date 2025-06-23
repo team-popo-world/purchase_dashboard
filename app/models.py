@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 
 # 응답 모델들
@@ -9,7 +9,7 @@ class DashboardMetrics(BaseModel):
     mostPopularCategory: str
     educationRatio: float
     totalPurchases: int
-    avgPurchaseAmount: int
+    avgPurchaseAmount: float
     
 class CategoryData(BaseModel):
     name: str
@@ -48,3 +48,15 @@ class DashboardResponse(BaseModel):
     popularProducts: List[PopularProduct]
     alerts: List[AlertItem]
     lastUpdated: datetime
+
+# 새로운 모델들 추가
+class ChildInfo(BaseModel):
+    child_id: str
+
+class ChildrenResponse(BaseModel):
+    children: List[ChildInfo]
+
+class HealthResponse(BaseModel):
+    status: str
+    database: str
+    timestamp: datetime

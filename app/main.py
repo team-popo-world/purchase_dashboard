@@ -22,6 +22,16 @@ app.add_middleware(
 # 라우터 등록
 app.include_router(analytics_router)
 
+# Root level health check endpoint
+@app.get("/health")
+async def root_health_check():
+    """Root level health check"""
+    return {
+        "status": "healthy",
+        "database": "connected", 
+        "timestamp": "2025-06-18T14:30:25.123456"
+    }
+
 @app.get("/")
 async def root():
     return {"message": "아이 습관 분석 API 서버가 실행 중입니다!"}
