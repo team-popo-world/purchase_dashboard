@@ -22,6 +22,7 @@ class WeeklyTrendItem(BaseModel):
     오락: int = 0
     장난감: int = 0
     교육: int = 0
+    먹이: int = 0  # 게임 캐릭터 먹이 카테고리 추가
     기타: int = 0
 
 class HourlyData(BaseModel):
