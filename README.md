@@ -114,7 +114,7 @@ MongoDB 컬렉션 구조:
 | SNACK | 간식 | 과자, 사탕 등 |
 | ENTERTAINMENT | 오락 | 게임, 영상 시청 등 |
 | TOY | 장난감 | 레고, 인형 등 |
-| EDUCATION | 교육 | 도서, 학습 도구 등 |
+| EDUCATION | 교육 및 문구 | 도서, 학습 도구 등 |
 | FOOD | 먹이 | 게임 캐릭터 먹이 |
 | ETC | 기타 | 기타 모든 항목 |
 

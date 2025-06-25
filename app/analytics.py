@@ -22,7 +22,7 @@ class PurchaseAnalyzer:
                 'SNACK': '간식',
                 'ENTERTAINMENT': '오락',
                 'TOY': '장난감',
-                'EDUCATION': '교육',
+                'EDUCATION': '교육 및 문구',
                 'ETC': '기타'
             }
             
@@ -70,7 +70,7 @@ class PurchaseAnalyzer:
         # 교육 아이템 비중
         education_ratio = 0.0
         if not this_week.empty and this_week_total > 0:
-            education_amount = this_week[this_week['label_korean'] == '교육']['total_amount'].sum()
+            education_amount = this_week[this_week['label_korean'] == '교육 및 문구']['total_amount'].sum()
             education_ratio = (education_amount / this_week_total * 100)
         
         # 평균 구매액
@@ -106,11 +106,11 @@ class PurchaseAnalyzer:
             if not day_data.empty:
                 category_sums = day_data.groupby('label_korean')['total_amount'].sum()
                 # 모든 카테고리 포함 (먹이 카테고리 추가)
-                categories = ['간식', '오락', '장난감', '교육', '먹이', '기타']
+                categories = ['간식', '오락', '장난감', '교육 및 문구', '먹이', '기타']
                 for category in categories:
                     day_result[category] = int(category_sums.get(category, 0))
             else:
-                for category in ['간식', '오락', '장난감', '교육', '먹이', '기타']:
+                for category in ['간식', '오락', '장난감', '교육 및 문구', '먹이', '기타']:
                     day_result[category] = 0
                 
             trend_data.append(day_result)
@@ -130,7 +130,7 @@ class PurchaseAnalyzer:
             '간식': '#ff6b6b',
             '오락': '#4ecdc4',
             '장난감': '#45b7d1',
-            '교육': '#96ceb4',
+            '교육 및 문구': '#96ceb4',
             '먹이': '#ff9f40',  # 오렌지색으로 게임 캐릭터 먹이 표시
             '기타': '#ffeaa7'
         }
@@ -186,7 +186,7 @@ class PurchaseAnalyzer:
         return [
             {
                 'name': row['name'],
-                'category': '교육' if row['category'] == '교육 및 문구' else row['category'],
+                'category': row['category'],  # 이미 한국어로 매핑된 카테고리 사용
                 'count': int(row['cnt']),
                 'totalAmount': int(row['total_amount']),
                 'avgPrice': round(float(row['price']), 1)

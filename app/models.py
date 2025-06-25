@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
@@ -21,9 +21,12 @@ class WeeklyTrendItem(BaseModel):
     간식: int = 0
     오락: int = 0
     장난감: int = 0
-    교육: int = 0
+    교육_및_문구: int = Field(0, alias='교육 및 문구')
     먹이: int = 0  # 게임 캐릭터 먹이 카테고리 추가
     기타: int = 0
+    
+    class Config:
+        populate_by_name = True
 
 class HourlyData(BaseModel):
     hour: str

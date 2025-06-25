@@ -32,7 +32,7 @@ LABEL_MAPPING = {
     "SNACK": "간식", 
     "ENTERTAINMENT": "오락",
     "TOY": "장난감",
-    "EDUCATION": "교육",
+    "EDUCATION": "교육 및 문구",
     "ETC": "기타"
 }
 
