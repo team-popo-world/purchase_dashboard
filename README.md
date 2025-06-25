@@ -51,12 +51,12 @@ COLLECTION_NAME=purchase_history
 
 ```bash
 # UV 환경에서 실행
-uv run uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload --port 8001
 ```
 
 ### 4. 접속 확인
-- **API 문서**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/health
+- **API 문서**: http://localhost:8001/docs
+- **Health Check**: http://localhost:8001/health
 
 ## 📡 API 엔드포인트
 
@@ -115,7 +115,8 @@ MongoDB 컬렉션 구조:
 | ENTERTAINMENT | 오락 | 게임, 영상 시청 등 |
 | TOY | 장난감 | 레고, 인형 등 |
 | EDUCATION | 교육 | 도서, 학습 도구 등 |
-| FOOD/ETC | 기타 | 기타 모든 항목 |
+| FOOD | 먹이 | 게임 캐릭터 먹이 |
+| ETC | 기타 | 기타 모든 항목 |
 
 ## 🔧 개발 참고사항
 
