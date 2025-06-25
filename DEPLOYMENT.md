@@ -112,6 +112,23 @@ docker-compose logs -f app
 2. **메모리 부족**: EC2 인스턴스 타입 확인
 3. **권한 문제**: Docker 그룹 권한 확인
 4. **네트워크 연결**: 보안 그룹 설정 확인
+5. **코드 변경사항 미반영**: Docker 이미지 캐시로 인한 문제
+
+### 코드 변경사항이 반영되지 않는 경우
+```bash
+# 1. 최신 코드 확인
+git pull origin dev2
+git log --oneline -3
+
+# 2. 컨테이너 완전 재시작
+docker-compose down
+docker-compose build --no-cache app
+docker-compose up -d
+
+# 3. API 응답 테스트
+curl -X GET "http://localhost:8001/api/children"
+curl -X GET "http://localhost:8001/api/dashboard/{child_id}?days=30" | jq '.weeklyTrend[0]'
+```
 
 ### 문제 해결 명령어
 ```bash
