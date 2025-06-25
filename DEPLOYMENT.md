@@ -36,7 +36,7 @@ docker-compose -f docker-compose.prod.yml up -d
 - Port 80 (HTTP): 0.0.0.0/0
 - Port 443 (HTTPS): 0.0.0.0/0  
 - Port 22 (SSH): 관리자 IP만
-- Port 8000 (API): 선택사항 (Nginx를 통해 프록시하는 경우 불필요)
+- Port 8001 (API): 선택사항 (Nginx를 통해 프록시하는 경우 불필요)
 
 ### 4. SSL 인증서 설정 (선택사항)
 ```bash
