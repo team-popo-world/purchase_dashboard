@@ -18,7 +18,7 @@ class PurchaseAnalyzer:
             
             # label을 한국어 카테고리로 변환
             label_korean_mapping = {
-                'FOOD': '기타',      # 애완동물 먹이는 기타로 분류
+                'FOOD': '먹이',      # 게임 캐릭터 먹이를 별도 카테고리로 분류
                 'SNACK': '간식',
                 'ENTERTAINMENT': '오락',
                 'TOY': '장난감',
@@ -105,12 +105,12 @@ class PurchaseAnalyzer:
             
             if not day_data.empty:
                 category_sums = day_data.groupby('label_korean')['total_amount'].sum()
-                # 요청된 카테고리만 사용
-                categories = ['간식', '오락', '장난감', '교육', '기타']
+                # 모든 카테고리 포함 (먹이 카테고리 추가)
+                categories = ['간식', '오락', '장난감', '교육', '먹이', '기타']
                 for category in categories:
                     day_result[category] = int(category_sums.get(category, 0))
             else:
-                for category in ['간식', '오락', '장난감', '교육', '기타']:
+                for category in ['간식', '오락', '장난감', '교육', '먹이', '기타']:
                     day_result[category] = 0
                 
             trend_data.append(day_result)
@@ -131,6 +131,7 @@ class PurchaseAnalyzer:
             '오락': '#4ecdc4',
             '장난감': '#45b7d1',
             '교육': '#96ceb4',
+            '먹이': '#ff9f40',  # 오렌지색으로 게임 캐릭터 먹이 표시
             '기타': '#ffeaa7'
         }
         
@@ -224,6 +225,21 @@ class PurchaseAnalyzer:
                     'type': 'warning',
                     'title': '간식 소비 주의',
                     'message': f'이번 주 간식 구매가 전체의 {snack_ratio*100:.0f}%를 넘었어요. 균형 잡힌 소비를 권장해요!'
+                })
+            
+            # 게임 캐릭터 먹이 소비 체크
+            food_ratio = category_ratios.get('먹이', 0)
+            if food_ratio > 0.3:
+                alerts.append({
+                    'type': 'info',
+                    'title': '게임 먹이 관리',
+                    'message': f'게임 캐릭터 먹이 구매가 전체의 {food_ratio*100:.0f}%예요. 게임 시간과 함께 관리해보세요! 🎮'
+                })
+            elif food_ratio > 0.15:
+                alerts.append({
+                    'type': 'info',
+                    'title': '게임 균형 유지',
+                    'message': '게임 캐릭터를 잘 돌보고 있어요. 다른 활동과 균형을 맞춰보세요! 🐾'
                 })
             
             # 교육 아이템 관련 알림
