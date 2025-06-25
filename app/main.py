@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.analytics import router as analytics_router
+from .utils import get_kst_now, format_kst_datetime
 
 # FastAPI 앱 초기화
 app = FastAPI(
@@ -26,10 +27,11 @@ app.include_router(analytics_router)
 @app.get("/health")
 async def root_health_check():
     """Root level health check"""
+    current_time = get_kst_now()
     return {
         "status": "healthy",
         "database": "connected", 
-        "timestamp": "2025-06-18T14:30:25.123456"
+        "timestamp": format_kst_datetime(current_time, "%Y-%m-%dT%H:%M:%S")
     }
 
 @app.get("/")

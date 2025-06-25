@@ -9,6 +9,7 @@ from ..models import (
     ChildrenResponse, ChildInfo, HealthResponse
 )
 from ..analytics import PurchaseAnalyzer
+from ..utils import get_kst_now
 
 router = APIRouter(prefix="/api", tags=["analytics"])
 
@@ -46,7 +47,7 @@ async def get_dashboard_data(
                     'title': '첫 구매를 시작해보세요',
                     'message': '아직 구매 데이터가 없어요!'
                 }],
-                lastUpdated=datetime.now()
+                lastUpdated=get_kst_now()
             )
         
         # 분석기 생성
@@ -78,7 +79,7 @@ async def get_dashboard_data(
             hourlyData=hourly_data,
             popularProducts=popular_products,
             alerts=alerts,
-            lastUpdated=datetime.now()
+            lastUpdated=get_kst_now()
         )
         
     except Exception as e:
@@ -114,12 +115,12 @@ async def health_check():
         return HealthResponse(
             status="healthy",
             database=f"MongoDB 연결 정상 (총 {count}건의 데이터)",
-            timestamp=datetime.now()
+            timestamp=get_kst_now()
         )
         
     except Exception as e:
         return HealthResponse(
             status="unhealthy",
             database=f"MongoDB 연결 오류: {str(e)}",
-            timestamp=datetime.now()
+            timestamp=get_kst_now()
         )

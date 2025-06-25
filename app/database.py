@@ -7,6 +7,7 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 import asyncio
 from dotenv import load_dotenv
+from .utils import get_kst_now, to_kst, from_kst_to_utc, KST
 
 # 환경변수 로드
 load_dotenv()
@@ -85,11 +86,13 @@ def get_purchase_data(child_id: Optional[str] = None, days: int = 7) -> pd.DataF
         pd.DataFrame: 구매 데이터
     """
     try:
-        # 날짜 필터 생성
-        start_date = datetime.now() - timedelta(days=days)
+        # 한국 시간 기준으로 날짜 필터 생성
+        start_date = get_kst_now() - timedelta(days=days)
+        # MongoDB 쿼리를 위해 UTC로 변환
+        start_date_utc = from_kst_to_utc(start_date)
         
         # MongoDB 쿼리 조건
-        query = {"timestamp": {"$gte": start_date}}
+        query = {"timestamp": {"$gte": start_date_utc}}
         
         # child_id가 지정된 경우 필터 추가
         if child_id:
@@ -124,6 +127,8 @@ def get_purchase_data(child_id: Optional[str] = None, days: int = 7) -> pd.DataF
         # 데이터 타입 변환
         if 'timestamp' in df.columns:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
+            # UTC 시간을 한국 시간으로 변환
+            df['timestamp'] = df['timestamp'].apply(lambda x: to_kst(x))
         if 'price' in df.columns:
             df['price'] = pd.to_numeric(df['price'], errors='coerce').fillna(0).astype(int)
         if 'cnt' in df.columns:
@@ -142,8 +147,12 @@ async def get_purchase_data_async(child_id: Optional[str] = None, days: int = 7)
     비동기적으로 구매 데이터 조회
     """
     try:
-        start_date = datetime.now() - timedelta(days=days)
-        query = {"timestamp": {"$gte": start_date}}
+        # 한국 시간 기준으로 날짜 필터 생성
+        start_date = get_kst_now() - timedelta(days=days)
+        # MongoDB 쿼리를 위해 UTC로 변환
+        start_date_utc = from_kst_to_utc(start_date)
+        
+        query = {"timestamp": {"$gte": start_date_utc}}
         
         if child_id:
             query["childId"] = child_id
@@ -160,6 +169,9 @@ async def get_purchase_data_async(child_id: Optional[str] = None, days: int = 7)
             # 한국어 라벨 추가
             if 'label' in doc:
                 doc['label_korean'] = LABEL_MAPPING.get(doc['label'], doc['label'])
+            # timestamp를 한국 시간으로 변환
+            if 'timestamp' in doc:
+                doc['timestamp'] = to_kst(doc['timestamp'])
         
         return documents
         

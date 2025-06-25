@@ -2,17 +2,24 @@ from typing import List, Dict, Any
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
+from .utils import get_kst_now, to_kst, KST
 
 # 데이터 분석 클래스
 class PurchaseAnalyzer:
     def __init__(self, df: pd.DataFrame):
         self.df = df.copy()
-        self.now = datetime.now()
+        self.now = get_kst_now()  # 한국 시간 사용
         self.one_week_ago = self.now - timedelta(days=7)
         self.two_weeks_ago = self.now - timedelta(days=14)
         
         # 데이터 전처리
         if not self.df.empty:
+            # timestamp를 한국 시간으로 변환
+            if 'timestamp' in self.df.columns:
+                self.df['timestamp'] = pd.to_datetime(self.df['timestamp'])
+                # timezone-aware로 변환 (UTC -> KST)
+                self.df['timestamp'] = self.df['timestamp'].apply(lambda x: to_kst(x) if x.tzinfo is None else x.astimezone(KST))
+            
             # 총액 계산 컬럼 추가
             self.df['total_amount'] = self.df['price'] * self.df['cnt']
             
