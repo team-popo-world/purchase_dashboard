@@ -73,9 +73,9 @@ timeout=30
 counter=0
 
 while [ $counter -lt $timeout ]; do
-    if curl -s http://localhost:8002/health > /dev/null; then
+    if curl -s http://localhost/health > /dev/null; then
         echo "✅ API 서버가 정상적으로 실행 중입니다!"
-        echo "🌐 API 주소: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):8002"
+        echo "🌐 API 주소: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
         break
     else
         echo "⏳ API 서버 시작 대기 중... ($counter/$timeout)"
@@ -100,5 +100,5 @@ echo "  서비스 재시작: docker-compose -f $COMPOSE_FILE restart"
 echo "  전체 중지: docker-compose -f $COMPOSE_FILE down"
 echo ""
 echo "🔗 접속 URL:"
-echo "  API: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):8002"
-echo "  Docs: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):8002/docs"
+echo "  API: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
+echo "  Docs: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)/docs"
